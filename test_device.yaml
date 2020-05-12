@@ -1,0 +1,33 @@
+hostname: TestRouter
+dns_server: 172.16.100.10
+interfaces:
+  - name: GigabitEthernet0/0
+    description: "WAN uplink"
+    ip: 11.1.1.1
+    mask: 255.255.255.252
+    enabled: true
+  - name: GigabitEthernet0/1
+    description: LAN
+    ip: 192.168.0.1
+    mask: 255.255.255.0
+    enabled: true
+  - name: GigabitEthernet0/2
+    description: Unused
+  - name: Loopback0
+    description: "Management Loopback0"
+    ip: 10.0.0.1
+    mask: 255.255.255.255
+    enabled: true
+protocols:
+  bgp:
+    bgp_router_id: 10.0.0.1
+    bgp_local_asn: 65001
+    bgp_neighbor:
+      - { id: 1.1.1.1, remote_asn: 100 }
+      - { id: 2.2.2.2, remote_asn: 200 }
+  ospf:
+    ospf_id: 1
+    ospf_router_id: 10.0.0.1
+    ospf_network:
+      - { ip: 192.168.0.0, mask: 255.255.255.0, area: 0 }
+      - { ip: 10.0.0.1, mask: 255.255.255.255, area: 0 }

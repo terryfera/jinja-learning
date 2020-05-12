@@ -1,0 +1,197 @@
+service nagle
+no service pad
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec localtime show-timezone
+service password-encryption
+no service dhcp
+!
+hostname {{ system.hostname }}
+!
+boot-start-marker
+boot-end-marker
+!
+logging buffered 16384
+enable secret {{ system.secret_type }} {{ system.secret }}
+!
+{% for id, user in users.iteritems() -%}
+username {{ user.login }} privilege {{ user.priv }} secret {{ user.secret_type }} {{ user.secret }}
+{% endfor %}!
+aaa new-model
+!
+!
+aaa authentication login default local-case
+aaa authentication enable default enable
+aaa authorization exec default local 
+aaa authorization commands 15 default local 
+!
+!
+!         
+!         
+!         
+!         
+aaa session-id common
+clock timezone {{ system.tz }}
+system mtu routing 1500
+no ip source-route
+!         
+!         
+no ip domain-lookup
+ip domain-name {{ system.fqdn }}
+ip device tracking
+login block-for 100 attempts 15 within 100
+login on-failure log
+login on-success log
+!         
+!         
+!         
+!         
+archive   
+ log config
+  logging enable
+  logging size 500
+  notify syslog contenttype plaintext
+  hidekeys
+!         
+!         
+{% for id, name in vlans.iteritems() -%}
+!
+{% if id is number %}
+vlan {{ id }}
+    name {{ name }}
+{% endif %}
+!
+{% endfor %}
+!         
+!         
+spanning-tree mode mst
+spanning-tree extend system-id
+!         
+spanning-tree mst configuration
+ name {{ spanningtree.mst_process }} 
+ instance 1 vlan {{ spanningtree.mst_instance1_vlans }}
+ instance 2 vlan {{ spanningtree.mst_instance2_vlans }} 
+!         
+!         
+!         
+!         
+!         
+!         
+!         
+!         
+!         
+!         
+vlan internal allocation policy ascending
+!         
+ip ssh version 2
+!         
+!         
+!         
+!         
+!         
+!         
+!         
+!         
+!         
+!         
+interface Null0
+ no ip unreachables
+!         
+{% for id, int in interfaces.iteritems() -%}
+    {% if int.type == 'trunk' %}!
+interface {{int.speed}}Ethernet{{ int.slotid }}/{{ int.portid }}
+    switchport trunk encapsulation dot1q
+    switchport trunk native vlan {{ vlans.native }}
+    switchport trunk allowed vlan {{ vlans.native }}
+{% for id, name in vlans.iteritems() -%}
+{% if id != 'native' %}
+{% if id != 'access' %}
+{% if id != 'voice' %}
+    switchport trunk allowed vlan add {{ id }}
+{% endif %}
+{% endif %}
+{% endif %}
+{% endfor %}
+    switchport nonegotiate
+    switchport mode trunk
+!
+{% elif int.type == 'access' %}
+interface {{int.speed}}Ethernet{{ int.slotid}}/{{ int.portid }}
+    description {{ int.description }}
+    switchport mode access
+    switchport access vlan {{ vlans.access }}
+    switchport nonegotiate
+    switchport voice vlan {{ vlans.voice }}
+    spanning-tree portfast
+    spanning-tree bpduguard enable
+!
+{% endif %}
+{% endfor %}
+!         
+!         
+interface Vlan1
+ no ip address
+ shutdown 
+!         
+interface {{ system.intf }} 
+ description Management Interface
+ ip address {{ system.ipaddr }} {{ system.netmask }} 
+!         
+ip default-gateway {{ system.defaultgw }} 
+ip forward-protocol nd
+no ip http server
+no ip http secure-server
+!         
+!         
+!         
+logging trap debugging
+logging facility local5
+!         
+snmp-server community {{ snmp.community }} RO
+!         
+!         
+!         
+banner login ^C
+-------------
+W A R N I N G
+-------------
+          
+THIS IS A PRIVATE COMPUTER SYSTEM.
+          
+This computer system including all related equipment, network devices
+(specifically including Internet access), are provided only for
+authorized use.
+          
+All computer systems may be monitored for all lawful purposes, including
+to ensure that their use is authorized, for management of the system, to
+facilitate protection against unauthorized access, and to verify security
+procedures, survivability and operational security.
+          
+Monitoring includes active attacks by authorized personnel and their
+entities to test or verify the security of the system. During monitoring,
+information may be examined, recorded, copied and used for authorized
+purposes. 
+          
+All information including personal information, placed on or sent over
+this system may be monitored. Uses of this system, authorized or
+unauthorized, constitutes consent to monitoring of this system.
+          
+Unauthorized use may subject you to criminal prosecution. Evidence of
+any such unauthorized use collected during monitoring may be used for
+administrative, criminal or other adverse action. Use of this system
+constitutes consent to monitoring for these purposes.
+
+^C        
+!         
+line con 0
+ exec-timeout 15 0
+ transport preferred none
+line vty 0 4
+ exec-timeout 15 0
+ transport preferred none
+ transport input ssh
+line vty 5 15
+!         
+ntp server {{ system.ntp_server }}
+end       

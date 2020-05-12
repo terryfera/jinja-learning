@@ -1,0 +1,31 @@
+hostname {{ hostname }}
+ip name-server {{ dns_server }}
+!
+{%- for interface in interfaces %}
+interface {{ interface['name'] }}
+ description {{ interface['description'] }}
+ ip address {{ interface['ip'] }} {{ interface['mask'] }}
+ {% if interface['enabled'] %} no {% endif %}shutdown
+{%- endfor %}
+!
+{%- if protocols['bgp'] %}
+router bgp {{ protocols['bgp']['bgp_local_asn'] }}
+ bgp router-id {{ protocols['bgp']['bgp_router_id'] }}
+ {%- for neighbor in protocols['bgp']['bgp_neighbor'] %}
+ neighbor {{ neighbor['id'] }} remote-as {{ neighbor['remote_asn'] }}
+ {%- endfor %}
+ !
+ address-family ipv4
+  {%- for neighbor in protocols['bgp']['bgp_neighbor'] %}
+  neighbor {{ neighbor['id'] }} activate
+  {%- endfor %}
+ exit-address-family
+{%- endif %}
+!
+{%- if protocols['ospf'] %}
+router ospf {{ protocols['ospf']['ospf_id'] }}
+ router-id {{ protocols['ospf']['ospf_router_id'] }}
+{%- for network in protocols['ospf']['ospf_network'] %}
+ network {{ network.ip }} {{ network.mask }} area {{ network.area }}
+{%- endfor %}
+{%- endif %}

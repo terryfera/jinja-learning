@@ -1,0 +1,5 @@
+router ospf {{ospf_id}}
+ router-id {{ospf_router_id}}
+{%for ip in ospf_network%}
+ network {{ip}} {{mask}} area {{area}}
+ 
